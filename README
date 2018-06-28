@@ -1,0 +1,129 @@
+################################################
+MICE TOF Calibration Utility
+################################################
+
+This document describes the procedure for running the MICE TOF calibration on the onrec control-room computers.
+
+The calibration code and run scripts are installed in onrec01:~/tof_calibration
+
+------------------------------------------------
+
+The contents of this directory are:
+a) calib.cpp MiceTofCalib.cc[hh], TofT0Calib.cc[hh], TofTriggerCalib.cc[hh], TofTWCalib.cc[hh] --> Source code
+
+b) CMakeLists.txt --> file for running cmake
+
+c) tofcalib_cards.txt --> Data cards for the calibration
+The cards control the following parameters
+-- the trigger station, 
+   -- default is 1 (i.e. tof1), if trigger on tof2 for eg., change it to 2
+-- the z distance between the stations, 
+-- and the location of the most populated pixels, 
+
+d) run_tof_calib.sh --> The script to run the calibration
+
+NOTE: Do not edit the code or the CMakeLists unless you know what you are doing.
+
+------------------------------------------------
+Before running the calibration first verify a couple of things:
+
+1. Make sure the ReduceCppTofCalib reducer was run during data-taking
+
+The reducer produces a ROOT file tofcalibdata_NNNN.root, where
+  -- NNNN = Run Number, for e.g. tofcalibdata_4993.root
+
+This ROOT file which be be the input to the calibration program
+
+This ROOT file then gets moved to $MAUS_WEB_MEDIA_RAW
+[--- NOTE: ---- I think this is not happening right now, so look for the tofcalibdata_????.root files in the 
+  directory from which the reducer was run ]
+
+If everything went well, the tofcalibdata_NNNN.root should be in 
+$MAUS_WEB_MEDIA_RAW
+
+Check to make sure:
+  ls -l $MAUS_WEB_MEDIA_RAW
+
+If you do not see the tofcalibdata.root file in that directory, something likely went wrong. 
+Here are some things you can check:
+
+a) look at the log from online reconstruction and verify it succeeded.
+b) if the reconstruction ran, check if tofcalibdata_???.root exists in the directory 
+the online reconstruction was run from; perhaps it failed to get moved to $MAUS_WEB_MEDIA_RAW
+c) if you are unsure, contact an expert
+
+------------------------------------------------
+2. After verifying 
+  a) cd to the MAUS installation directory
+  b) source env.sh
+  c) cd ~/tof_calibration
+
+Now you are ready to run the calibration:
+$ pwd 
+to make sure you are in ~/tof_calibration
+
+------------------------------------------------
+3. ./run_tof_calib.sh
+
+[ See 3.b if you want to specify the ROOT file on the command line ]
+The script will put out some informationals as it proceeds
+If all goes well the script will produce the following calibration files:
+- tofTWcalib.txt
+- tofTriggercalib.txt
+- tofT0calib.txt
+Take a look or have an expert look at these files before uploading to CDB
+One thing to quickly look for in the files is whether there are too many 0s or -9999s
+These indicate slabs/pixels with failed calibrations. 
+------------------------------------------------
+
+3.b Input ROOT via command line argument
+
+By default, the script will expect a file named tofcalibdata.root in MAUS_WEB_MEDIA_RAW
+
+If instead, you wish to use a different file name or a different path, you can supply it as 
+the first argument to this script
+
+./run_tof_calib.sh /path/to/filename.root
+
+You will be prompted to confirm. Answer and proceed.
+
+------------------------------------------------
+4. The script can fail for the following reasons:
+
+i. MAUS_ROOT_DIR was not set
+-- Solution: cd to the MAUS installation area; run `source env.sh` and return here and try again
+
+ii. Could not find tofcalibdata.root
+-- Possible causes: the ReduceCppTofCalib reducer was not run or it failed
+-- Solution: Check the online reconstruction logs for any failures, and make sure the reducer is run
+
+iii. tofcalibdata.root is empty
+-- Possible causes: bad data, tof digit/slab hits reconstruction failed, other bug
+-- Solution: contact a TOF reconstruction expert
+
+------------------------------------------------
+
+5. Calibration ran but the output txt files are sparsely populated or empty.
+- Symptom: a lot of '0's or -9999s in the tof*calib.txt files, 
+
+-- Possible cause 1: not enough statistics in the pixels
+-- Solution: take more data, or reduce the required minimum number of entries.
+To reduce the minimum number of entries
+a) edit the data cards file -> tofcalib_cards.txt
+b) look for min_entries_tw, min_entries_trig, min_entries_t0 and lower them
+c) save the file
+d) ./run_tof_calib.sh
+
+-- Possible cause 2: improper choice of central pixels
+-- Solution: 
+a) find the x,y pixels with the most statisics 
+- To do this, look at the Slab hits histograms from the online histogramming
+- Identify the most populated x & y slabs
+b) edit the data card file --> tofcalib_cards.txt
+c) find the keys: tof0_sXmax...tof2_sYmax
+d) the values for these keys are the 'maximum' x & y pixels in TOF0,1,2
+e) change the values appropriately
+f) save the file
+g) ./run_tof_calib.sh
+------------------------------------------------
+

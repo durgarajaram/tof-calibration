@@ -1,0 +1,12 @@
+trigger_station = 1
+tof1_len = -7642.014
+tof2_len = 8209.045
+tof0_sXmax = 4
+tof0_sYmax = 5
+tof1_sXmax = 3
+tof1_sYmax = 3
+tof2_sXmax = 4
+tof2_sYmax = 4
+min_entries_tw = 500
+min_entries_trig = 200
+min_entries_t0 = 100
